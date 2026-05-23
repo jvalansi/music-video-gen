@@ -1,0 +1,8 @@
+.env
+*.mp4
+*.png
+*.wav
+*.mp3
+__pycache__/
+filelist.txt
+clip_*.mp4
