@@ -3,6 +3,8 @@ import time
 import base64
 import requests
 
+# base64 used only for decoding image response from OpenRouter
+
 API_KEY = os.environ["OPENROUTER_API_KEY"]
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
@@ -10,10 +12,10 @@ HEADERS = {
 }
 
 IMAGE_PROMPT = (
-    "A cyborg mermaid with bioluminescent scales and chrome mechanical fins, "
-    "floating in deep dark ocean water, glowing circuitry running along her body, "
-    "ethereal blue and teal light emanating from within, long flowing hair, "
-    "looking upward, cinematic, photorealistic, 4K"
+    "A futuristic humanoid robot with bioluminescent aquatic armor and chrome fins, "
+    "submerged in deep dark ocean water, glowing blue circuitry running along its body, "
+    "ethereal teal light emanating from within, long flowing metallic tendrils, "
+    "looking upward toward the surface, cinematic sci-fi, photorealistic, 4K"
 )
 
 VIDEO_PROMPT = (
@@ -34,7 +36,7 @@ def generate_image(prompt: str, output_path: str = "frame.png") -> str:
         }
     )
     response.raise_for_status()
-    image_data = response.json()["choices"][0]["message"]["content"][0]["image_url"]["url"]
+    image_data = response.json()["choices"][0]["message"]["images"][0]["image_url"]["url"]
     image_bytes = base64.b64decode(image_data.split(",")[1])
     with open(output_path, "wb") as f:
         f.write(image_bytes)
@@ -42,18 +44,31 @@ def generate_image(prompt: str, output_path: str = "frame.png") -> str:
     return output_path
 
 
+def upload_image(image_path: str) -> str:
+    """Push image to GitHub and return raw content URL."""
+    import subprocess
+    print("Uploading image via GitHub...")
+    repo_dir = os.path.dirname(os.path.abspath(image_path))
+    filename = os.path.basename(image_path)
+    subprocess.run(["git", "-C", repo_dir, "add", "-f", image_path], check=True)
+    subprocess.run(["git", "-C", repo_dir, "commit", "--allow-empty", "-m", f"upload {filename}"], check=True)
+    subprocess.run(["git", "-C", repo_dir, "push"], check=True)
+    url = f"https://raw.githubusercontent.com/jvalansi/music-video-gen/main/{filename}"
+    print(f"Image URL: {url}")
+    return url
+
+
 def generate_video(image_path: str, prompt: str, output_path: str = "output.mp4") -> str:
     print("Submitting video generation...")
-    with open(image_path, "rb") as f:
-        image_b64 = base64.b64encode(f.read()).decode()
+    image_url = upload_image(image_path)
 
     response = requests.post(
-        "https://openrouter.ai/api/v1/videos/generations",
+        "https://openrouter.ai/api/v1/videos",
         headers=HEADERS,
         json={
             "model": "bytedance/seedance-2.0",
             "prompt": prompt,
-            "image": f"data:image/png;base64,{image_b64}",
+            "frame_images": [{"type": "image_url", "image_url": {"url": image_url}, "frame_type": "first_frame"}],
             "duration": 10,
             "resolution": "1080p"
         }
@@ -65,14 +80,14 @@ def generate_video(image_path: str, prompt: str, output_path: str = "output.mp4"
     print("Waiting for video...")
     while True:
         result = requests.get(
-            f"https://openrouter.ai/api/v1/videos/generations/{task_id}",
+            f"https://openrouter.ai/api/v1/videos/{task_id}",
             headers=HEADERS
         ).json()
         status = result["status"]
         print(f"Status: {status}")
         if status == "completed":
-            video_url = result["results"][0]["url"]
-            video_data = requests.get(video_url).content
+            video_content_url = result["unsigned_urls"][0]
+            video_data = requests.get(video_content_url, headers=HEADERS).content
             with open(output_path, "wb") as f:
                 f.write(video_data)
             print(f"Video saved to {output_path}")

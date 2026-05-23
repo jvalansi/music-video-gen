@@ -2,10 +2,10 @@
 
 IMAGE_PROMPTS = {
     "robot_mermaid": (
-        "A cyborg mermaid with bioluminescent scales and chrome mechanical fins, "
-        "floating in deep dark ocean water, glowing circuitry running along her body, "
-        "ethereal blue and teal light emanating from within, long flowing hair, "
-        "looking upward, cinematic, photorealistic, 4K"
+        "A futuristic humanoid robot with bioluminescent aquatic armor and chrome fins, "
+        "submerged in deep dark ocean water, glowing blue circuitry running along its body, "
+        "ethereal teal light emanating from within, long flowing metallic tendrils, "
+        "looking upward toward the surface, cinematic sci-fi, photorealistic, 4K"
     ),
 }
 
