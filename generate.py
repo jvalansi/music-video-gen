@@ -58,9 +58,13 @@ def upload_image(image_path: str) -> str:
     return url
 
 
-def generate_video(image_path: str, prompt: str, output_path: str = "output.mp4") -> str:
+def generate_video(image_path: str, prompt: str, output_path: str = "output.mp4", loop: bool = True) -> str:
     print("Submitting video generation...")
     image_url = upload_image(image_path)
+
+    frame_images = [{"type": "image_url", "image_url": {"url": image_url}, "frame_type": "first_frame"}]
+    if loop:
+        frame_images.append({"type": "image_url", "image_url": {"url": image_url}, "frame_type": "last_frame"})
 
     response = requests.post(
         "https://openrouter.ai/api/v1/videos",
@@ -68,7 +72,7 @@ def generate_video(image_path: str, prompt: str, output_path: str = "output.mp4"
         json={
             "model": "bytedance/seedance-2.0",
             "prompt": prompt,
-            "frame_images": [{"type": "image_url", "image_url": {"url": image_url}, "frame_type": "first_frame"}],
+            "frame_images": frame_images,
             "duration": 10,
             "resolution": "1080p"
         }
