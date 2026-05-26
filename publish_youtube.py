@@ -14,7 +14,7 @@ import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.http
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/youtube"]
 CLIENT_SECRETS = "client_secrets.json"
 TOKEN_FILE = "token.json"
 
