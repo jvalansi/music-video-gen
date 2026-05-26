@@ -14,7 +14,7 @@ import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.http
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+SCOPES = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.readonly"]
 CLIENT_SECRETS = "client_secrets.json"
 TOKEN_FILE = "token.json"
 
@@ -78,6 +78,13 @@ if __name__ == "__main__":
     parser.add_argument("--title", default="Robot Mermaid — AI Music Video")
     parser.add_argument("--description", default="AI-generated music video made with Seedance 2.0 & OpenRouter.")
     parser.add_argument("--tags", default="ai music,electronic,suno,ai video")
+    parser.add_argument("--whoami", action="store_true", help="Print the authenticated channel and exit")
     args = parser.parse_args()
 
-    upload_video(args.video, args.title, args.description, args.tags.split(","))
+    if args.whoami:
+        youtube = get_youtube_client()
+        resp = youtube.channels().list(part="snippet", mine=True).execute()
+        for ch in resp.get("items", []):
+            print(f"{ch['id']}  {ch['snippet']['title']}")
+    else:
+        upload_video(args.video, args.title, args.description, args.tags.split(","))
