@@ -74,7 +74,8 @@ def generate_video(image_path: str, prompt: str, output_path: str = "output.mp4"
             "prompt": prompt,
             "frame_images": frame_images,
             "duration": 10,
-            "resolution": "1080p"
+            "resolution": "1080p",
+            "generate_audio": False
         }
     )
     response.raise_for_status()
