@@ -53,7 +53,9 @@ def upload_image(image_path: str) -> str:
     subprocess.run(["git", "-C", repo_dir, "add", "-f", image_path], check=True)
     subprocess.run(["git", "-C", repo_dir, "commit", "--allow-empty", "-m", f"upload {filename}"], check=True)
     subprocess.run(["git", "-C", repo_dir, "push"], check=True)
-    url = f"https://raw.githubusercontent.com/jvalansi/music-video-gen/main/{filename}"
+    sha = subprocess.run(["git", "-C", repo_dir, "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+    # pin to commit sha: raw.githubusercontent caches /main/ and would serve a stale image
+    url = f"https://raw.githubusercontent.com/jvalansi/music-video-gen/{sha}/{filename}"
     print(f"Image URL: {url}")
     return url
 
