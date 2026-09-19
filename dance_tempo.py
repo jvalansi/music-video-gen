@@ -92,6 +92,29 @@ def estimate_bpm(env, fps, bpm_min=60.0, bpm_max=180.0):
     return 60.0 * fps / lag, float(max(0.0, y1 - band.mean())), ac
 
 
+def step_symmetry(env, fps, bpm_min=60.0, bpm_max=200.0):
+    """How alike consecutive motion events are, 0..1+.
+
+    Measured as ac[L] / ac[2L], where L is the shortest strong autocorrelation
+    peak -- the rate at which motion events occur. If every event is the same,
+    the signal's true period is L and both lags correlate equally, giving ~1.0:
+    that is running in place, where left and right footfalls are identical. A
+    running-man shuffle alternates a knee lift with a backward slide, so the
+    true period is 2L and the lift-vs-slide comparison at L correlates poorly,
+    dropping the ratio well below 1. Event *rate* alone cannot tell these apart.
+    """
+    _, _, ac = estimate_bpm(env, fps, bpm_min, bpm_max)
+    lo = max(1, int(np.floor(fps * 60.0 / bpm_max)))
+    hi = min(ac.size // 2 - 1, int(np.ceil(fps * 60.0 / bpm_min)))
+    band = ac[lo:hi + 1]
+    thresh = 0.4 * band.max()
+    L = next((i for i in range(lo + 1, hi)
+              if ac[i] >= thresh and ac[i] >= ac[i - 1] and ac[i] >= ac[i + 1]), None)
+    if L is None or 2 * L >= ac.size or ac[2 * L] <= 0:
+        raise ValueError("no usable periodicity for the symmetry check")
+    return float(ac[L] / ac[2 * L])
+
+
 def _selftest():
     fps = 24.0
     for want in (96.0, 128.0, 150.0):
@@ -102,7 +125,25 @@ def _selftest():
         got, conf, _ = estimate_bpm(sig, fps)
         assert abs(got - want) < 2.0, f"{want} -> {got:.1f}"
         assert conf > 0.15, f"{want} conf {conf:.2f}"
-    print("selftest ok")
+
+    # symmetric pulses (running) vs alternating big/small pulses (shuffle)
+    fps, bpm = 24.0, 120.0
+    n = int(fps * 10)
+    t = np.arange(n) / fps
+    step = 60.0 / bpm
+    run = np.zeros(n)
+    shuf = np.zeros(n)
+    for k in range(int(10 / step)):
+        j = int(round(k * step * fps))
+        if j < n:
+            run[j] = 1.0
+            shuf[j] = 1.0 if k % 2 == 0 else 0.35     # lift heavier than slide
+    sym_run = step_symmetry(run, fps)
+    sym_shuf = step_symmetry(shuf, fps)
+    assert sym_run > 0.85, f"run symmetry {sym_run:.2f}"
+    assert sym_shuf < 0.85, f"shuffle symmetry {sym_shuf:.2f}"
+    assert sym_run - sym_shuf > 0.3, f"not separable: {sym_run:.2f} vs {sym_shuf:.2f}"
+    print(f"selftest ok (run sym {sym_run:.2f}, shuffle sym {sym_shuf:.2f})")
 
 
 if __name__ == "__main__":
@@ -122,3 +163,14 @@ if __name__ == "__main__":
     print(f"{path}  fps={fps:g}  frames={env.size + 1}  roi={roi}")
     print(f"tempo: {bpm:.1f} BPM   confidence {conf:.2f}")
     print(f"octaves: {bpm / 2:.1f} / {bpm:.1f} / {bpm * 2:.1f} BPM")
+    # the symmetry ratio is only meaningful once the signal is actually periodic
+    if conf < 0.30:
+        print("step symmetry: n/a (confidence too low to judge structure)")
+    else:
+        try:
+            sym = step_symmetry(env, fps, lo, hi)
+        except ValueError as e:
+            print(f"step symmetry: n/a ({e})")
+        else:
+            kind = "symmetric (running-like)" if sym > 0.85 else "alternating (shuffle-like)"
+            print(f"step symmetry: {sym:.2f}  -> {kind}")
