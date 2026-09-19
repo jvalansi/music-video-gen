@@ -108,8 +108,11 @@ def step_symmetry(env, fps, bpm_min=60.0, bpm_max=200.0):
     hi = min(ac.size // 2 - 1, int(np.ceil(fps * 60.0 / bpm_min)))
     band = ac[lo:hi + 1]
     thresh = 0.4 * band.max()
-    L = next((i for i in range(lo + 1, hi)
-              if ac[i] >= thresh and ac[i] >= ac[i - 1] and ac[i] >= ac[i + 1]), None)
+    # endpoints count: the dominant peak often sits right on the band edge
+    L = next((i for i in range(lo, hi + 1)
+              if ac[i] >= thresh
+              and (i == lo or ac[i] >= ac[i - 1])
+              and (i == hi or ac[i] >= ac[i + 1])), None)
     if L is None or 2 * L >= ac.size or ac[2 * L] <= 0:
         raise ValueError("no usable periodicity for the symmetry check")
     return float(ac[L] / ac[2 * L])
