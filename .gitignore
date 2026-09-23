@@ -9,3 +9,14 @@ clip_*.mp4
 *.log
 segs/
 beats.json
+
+# Google OAuth client and user token - never commit (repo is public)
+client_secrets.json
+token.json
+
+# Generated video output and scratch previews
+*.mp4
+tprev/
+
+# cc-connect workspace metadata
+.cc-connect/
