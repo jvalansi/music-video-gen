@@ -38,8 +38,9 @@ def generate_image(prompt: str, output_path: str = "frame.png") -> str:
     response.raise_for_status()
     image_data = response.json()["choices"][0]["message"]["images"][0]["image_url"]["url"]
     image_bytes = base64.b64decode(image_data.split(",")[1])
-    with open(output_path, "wb") as f:
+    with open(output_path + ".tmp", "wb") as f:
         f.write(image_bytes)
+    os.replace(output_path + ".tmp", output_path)
     print(f"Image saved to {output_path}")
     return output_path
 
@@ -60,7 +61,8 @@ def upload_image(image_path: str) -> str:
     return url
 
 
-def generate_video(image_path: str, prompt: str, output_path: str = "output.mp4", loop: bool = True) -> str:
+def generate_video(image_path: str, prompt: str, output_path: str = "output.mp4", loop: bool = True,
+                   model: str = "bytedance/seedance-2.0", resolution: str = "1080p") -> str:
     print("Submitting video generation...")
     image_url = upload_image(image_path)
 
@@ -72,11 +74,11 @@ def generate_video(image_path: str, prompt: str, output_path: str = "output.mp4"
         "https://openrouter.ai/api/v1/videos",
         headers=HEADERS,
         json={
-            "model": "bytedance/seedance-2.0",
+            "model": model,
             "prompt": prompt,
             "frame_images": frame_images,
             "duration": 10,
-            "resolution": "1080p",
+            "resolution": resolution,
             "generate_audio": False
         }
     )
@@ -95,8 +97,9 @@ def generate_video(image_path: str, prompt: str, output_path: str = "output.mp4"
         if status == "completed":
             video_content_url = result["unsigned_urls"][0]
             video_data = requests.get(video_content_url, headers=HEADERS).content
-            with open(output_path, "wb") as f:
+            with open(output_path + ".tmp", "wb") as f:
                 f.write(video_data)
+            os.replace(output_path + ".tmp", output_path)
             print(f"Video saved to {output_path}")
             return output_path
         elif status == "failed":
