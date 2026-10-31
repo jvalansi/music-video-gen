@@ -21,8 +21,9 @@ TAKES = [
     (16.0, C("2_traveler"), False),  # came up the hill with a coat full of rain
     (24.8, C("3_door"),     False),  # set down the basket beside the old door
     (37.0, C("4_hearth"),   False),  # chorus: come sit where the warm coals glow
-    (48.0, C("1_hill"),     True),   # break / the hard wind passed
-    (63.0, C("3_door"),     True),   # your laugh found the rafters
+    (48.0, C("5_kettle"),   False),  # the kettle kept time while the hard wind passed
+    (63.0, C("6_table"),    False),  # your laugh found the rafters / split the last apple
+    (72.0, C("5_kettle"),   True),   # watched all the weather move on through the leaves
     (80.0, C("4_hearth"),   True),   # chorus 2
     (90.0, C("1_hill"),     False),  # outro
 ]
